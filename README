@@ -1,0 +1,111 @@
+lp_tiny - A tiny library to solve linear programs.
+
+=== Description ===
+
+A linear program is an optimization problem of the following type:
+
+  minimize    c^T * x       (the linear objective function)
+  subject to  A*x == b      (the set of equality constraints)
+              x >= 0        (the set of positivity constraints)
+where x is dimension n, and A has m rows, with n > m, and rank(A) == m.
+
+lp_tiny solves these kinds of problems under the additional restriction
+that the sublevel sets of the problem are bounded (that is, for a given
+value of the objective function, the constraints produce a bounded region
+in n-dimensional space. THIS LAST PART IS EXTRA RESTRICTION IS IMPORTANT.
+
+This is a library written for programmers and mathematicians. We do not
+coddle you with notions of individual variables or costs or other silly
+notions from Operations Research proper. You are expected to be able to
+express your problem in the mathematical form stated above.
+
+=== Usage ===
+
+First, your problem needs to be transformed to above standard form.
+In general, you will have general inequalities: A*x >= b or A*x <= b,
+as well as unbounded variables that do not appear in the objective
+function.
+
+For each in general equality constraint, add slack variables which
+represent the (positive) difference between the constraint and the
+bound:
+        A*x >= b    ---->     A*x - slack == b, slack >= 0
+        A*x <= b    ---->     A*x + slack == b, slack >= 0
+
+For each unbounded variable, split it into positive and negative parts:
+               y    ---->     yp >= 0, ym >= 0  (y = yp - ym)
+where the variable y is now eliminated and replaced by yp and ym, and
+of course you have to augment the objective function's c with extra zeros.
+
+Finally, you should check that your A matrix has full row rank. If not,
+you can manually eliminate the linearly dependent rows beforehand (for
+example, using a rank revealing QR decomposition).
+
+Now you are ready to call the library. The interface is pretty simple:
+
+    lp_tiny lp;              // linear program structure (see header)
+    lp_tiny_status status;   // status of solution
+    double x[2];             // solution vector
+    lp_tiny_init(&lp, 2, 1); // all matrices and vectors already zeroed
+    
+    // Set objective function
+    lp.c[0] = 1;
+    // Set constraints
+    lp.A[0] = 1;
+    lp.A[1] = 1;
+    lp.b[0] = -1;
+    
+    // Perform solve
+    lp_tiny_solve(&lp, x, NULL, NULL, &status, NULL);
+    printf(" Status: %s\n", lp_tiny_status_string(status));
+    
+    // Cleanup
+    lp_tiny_destroy(&lp);
+
+If you get that your problem is unbounded when you know it should have a
+finite solution, then it is probably because the sublevel sets of your
+problem are not bounded. A simple way is to bound the sublevel sets is
+to add a constraint row in the A matrix of all 1's, which places a limit
+on the sum of all your unknowns. Of course, you should use extra
+information about your problem to intelligently place bounds on individual
+variables if possible.
+IF YOU CANNOT PLACE THESE BOUNDS, THIS LIBRARY IS NOT FOR YOU.
+
+The library is composed of just 3 files:
+  lp_tiny.h
+  lp_tiny.c
+  lapack_decl.h
+only one of which is a source file. The code depends on LAPACK, but I will
+supply basic C implementations of the necessary functions in the future.
+
+=== Performance ===
+
+There's actually nothing tiny about the size of problems lp_tiny can solve,
+although it is limited to dense problems (if your matrix A is sparse, then
+you can get huge speedups using more sophisticated methods).
+
+On my rather modest test machine with reference BLAS, times in seconds:
+
+   m:   1    2    4    8   16   32   64   128   512
+n:   +----------------------------------------------
+2    |  0
+4    |  0    0
+8    |  0    0    0
+16   |  0    0    0    0
+32   |  0    0    0    0    0
+64   |  0    0    0    0   0.01 0.02
+128  |  0   0.01  0   0.01 0.01 0.04 0.14
+256  | 0.01 0.01 0.01 0.02 0.03 0.08 0.28 0.97
+512  | 0.01 0.01 0.02 0.03 0.07 0.16 0.55 3.70 16.3
+1024 | 0.04 0.04 0.05 0.07 0.15 0.34 2.08 8.99 62.8 252
+
+With optimized GotoBLAS, the 1024x512 case is solved in 29 seconds.
+
+=== Tweaking ===
+
+I have no idea how robust this library is. I have used it for a few random
+things, and it appears to work alright. The code was originally written for
+the final homework of a class on convex optimization, so it is quite a
+textbook implementation. However, if anything goes wrong, the code is so
+simple that you can just go in and modify or tweak things. Lots of iteration
+limits are hard coded. Memory allocation routines can be modified, etc.
