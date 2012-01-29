@@ -12,7 +12,7 @@ where x is dimension n, and A has m rows, with n > m, and rank(A) == m.
 lp_tiny solves these kinds of problems under the additional restriction
 that the sublevel sets of the problem are bounded (that is, for a given
 value of the objective function, the constraints produce a bounded region
-in n-dimensional space. THIS LAST PART IS EXTRA RESTRICTION IS IMPORTANT.
+in n-dimensional space. THIS EXTRA RESTRICTION IS IMPORTANT.
 
 This is a library written for programmers and mathematicians. We do not
 coddle you with notions of individual variables or costs or other silly
