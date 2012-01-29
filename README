@@ -21,12 +21,11 @@ express your problem in the mathematical form stated above.
 
 === Usage ===
 
-First, your problem needs to be transformed to above standard form.
+First, your problem needs to be transformed to the above standard form.
 In general, you will have general inequalities: A*x >= b or A*x <= b,
-as well as unbounded variables that do not appear in the objective
-function.
+as well as unbounded variables that appear in the objective function.
 
-For each in general equality constraint, add slack variables which
+For each general equality constraint, add slack variables which
 represent the (positive) difference between the constraint and the
 bound:
         A*x >= b    ---->     A*x - slack == b, slack >= 0
@@ -35,11 +34,12 @@ bound:
 For each unbounded variable, split it into positive and negative parts:
                y    ---->     yp >= 0, ym >= 0  (y = yp - ym)
 where the variable y is now eliminated and replaced by yp and ym, and
-of course you have to augment the objective function's c with extra zeros.
+of course you have to modify the objective function's c appropriately.
 
 Finally, you should check that your A matrix has full row rank. If not,
 you can manually eliminate the linearly dependent rows beforehand (for
-example, using a rank revealing QR decomposition).
+example, using a rank revealing QR decomposition). This is rarely a
+problem.
 
 Now you are ready to call the library. The interface is pretty simple:
 
@@ -50,14 +50,16 @@ Now you are ready to call the library. The interface is pretty simple:
     
     // Set objective function
     lp.c[0] = 1;
+    lp.c[1] = 2;
     // Set constraints
     lp.A[0] = 1;
     lp.A[1] = 1;
-    lp.b[0] = -1;
+    lp.b[0] = 1;
     
     // Perform solve
     lp_tiny_solve(&lp, x, NULL, NULL, &status, NULL);
-    printf(" Status: %s\n", lp_tiny_status_string(status));
+    printf("Status: %s\n", lp_tiny_status_string(status));
+    printf("Solution: %g, %g\n", x[0], x[1]);
     
     // Cleanup
     lp_tiny_destroy(&lp);
